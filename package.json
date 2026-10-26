@@ -4,7 +4,7 @@
     "type": "git",
     "url": "https://github.com/stenciljs/vitest"
   },
-  "version": "1.15.1",
+  "version": "1.16.1",
   "description": "First-class testing utilities for Stencil design systems with Vitest",
   "license": "MIT",
   "type": "module",
@@ -75,7 +75,7 @@
   "scripts": {
     "build": "tsc && tsc -p tsconfig.bin.json && cp src/globals.d.ts dist/globals.d.ts",
     "dev": "tsc --watch",
-    "test:e2e": "pnpm --filter test-project test",
+    "test:e2e": "pnpm --filter test-project --filter test-env-comments test",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:engines": "pnpm installed-check --no-workspaces --ignore-dev",
@@ -86,14 +86,15 @@
     "knip": "knip",
     "quality": "pnpm format && pnpm lint && pnpm knip",
     "quality:fix": "pnpm format:fix && pnpm lint:fix && pnpm knip",
-    "release": "semantic-release"
+    "release": "semantic-release",
+    "test:types": "tsc -p tsconfig.types.json"
   },
   "publishConfig": {
     "access": "public"
   },
   "peerDependencies": {
     "@stencil/core": "^4.0.0 || >=5.0.0-alpha.0 <5.0.0-next.0 || ^5.0.0",
-    "vitest": "^4.0.0 || ^3.0.0 || ^2.0.0"
+    "vitest": "^5.0.0 || ^4.0.0 || ^3.0.0 || ^2.0.0"
   },
   "peerDependenciesMeta": {
     "@playwright/test": {
@@ -134,22 +135,25 @@
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/exec": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
-    "@stencil/core": "^4.0.0 || >=5.0.0-alpha.0 <5.0.0-next.0 || ^5.0.0",
     "@stencil/cli": "^5.0.0 || >=5.0.0-alpha.0 <5.0.0-next.0",
+    "@stencil/core": "^4.0.0 || >=5.0.0-alpha.0 <5.0.0-next.0 || ^5.0.0",
     "@types/node": "24.10.4",
     "@typescript-eslint/eslint-plugin": "^8.50.0",
     "@typescript-eslint/parser": "^8.50.0",
-    "@vitest/coverage-v8": "^4.1.0",
+    "@vitest/browser": "^5.0.3",
+    "@vitest/coverage-v8": "^5.0.3",
     "eslint": "^9.39.2",
+    "happy-dom": "^20.0.11",
     "installed-check": "^9.3.0",
+    "jsdom": "^27.3.0",
     "knip": "^5.76.3",
     "prettier": "^3.7.4",
     "semantic-release": "^25.0.2",
     "typescript": "~5.8.3",
-    "vitest": "^4.1.0"
+    "vitest": "^5.0.3"
   },
   "engines": {
-    "node": "^20.0.0 || ^22.0.0 || >=24.0.0"
+    "node": "^22.12.0 || ^24.0.0 || >=26.0.0"
   },
   "packageManager": "pnpm@10.26.0",
   "pnpm": {

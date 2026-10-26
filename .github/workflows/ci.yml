@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - run: corepack enable
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: lts/*
           cache: 'pnpm'
@@ -62,7 +62,7 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - run: corepack enable
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: lts/*
           cache: 'pnpm'
@@ -81,5 +81,50 @@ jobs:
       - name: Run unit tests
         run: pnpm test:unit
 
+      - name: Check public types
+        run: pnpm test:types
+
       - name: Test examples
         run: pnpm test:e2e
+
+  compatibility:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        vitest: [2, 3, 4, 5]
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - run: corepack enable
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: lts/*
+          cache: 'pnpm'
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+
+      - name: Pack the adapter for an isolated consumer
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/stencil-vitest-compat/test/types"
+          cp tsconfig.json tsconfig.types.json test/compat/*.ts "$RUNNER_TEMP/stencil-vitest-compat/"
+          cp test/types/matchers.ts "$RUNNER_TEMP/stencil-vitest-compat/test/types/"
+          if [ "${{ matrix.vitest }}" = "5" ]; then
+            cp test/types/browser.ts "$RUNNER_TEMP/stencil-vitest-compat/test/types/"
+          fi
+          pnpm pack --pack-destination "$RUNNER_TEMP/stencil-vitest-compat"
+
+      - name: Install the consumer's Vitest version
+        working-directory: ${{ runner.temp }}/stencil-vitest-compat
+        run: npm install --no-audit --no-fund ./*.tgz vitest@${{ matrix.vitest }} @stencil/core@4 typescript@5 @types/node@24
+
+      - name: Install browser matcher declarations
+        if: matrix.vitest == 5
+        working-directory: ${{ runner.temp }}/stencil-vitest-compat
+        run: npm install --no-audit --no-fund @vitest/browser@5
+
+      - name: Check the built environment and public types
+        working-directory: ${{ runner.temp }}/stencil-vitest-compat
+        run: npx tsc -p tsconfig.types.json && npx vitest run

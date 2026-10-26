@@ -8,57 +8,61 @@ import { expect } from 'vitest';
 import { serializeHtml, normalizeHtml, prettifyHtml } from './html-serializer.js';
 import type { EventSpy } from '../types.js';
 
-/**
- * Custom matchers interface
- */
-interface CustomMatchers<R = unknown> {
+// Vitest 5 changed its assertion generics. Derive the return type from a built-in matcher to support both APIs.
+type MatcherResult<T> = T extends { toBe: (...args: any[]) => infer R } ? R : unknown;
+
+interface CustomMatchers {
   /** Asserts element has the specified CSS class. */
-  toHaveClass(className: string): R;
+  toHaveClass(className: string): MatcherResult<this>;
   /** Asserts element has all specified CSS classes. */
-  toHaveClasses(classNames: string[]): R;
+  toHaveClasses(classNames: string[]): MatcherResult<this>;
   /** Asserts element has exactly the specified CSS classes (no more, no less). */
-  toMatchClasses(classNames: string[]): R;
+  toMatchClasses(classNames: string[]): MatcherResult<this>;
   /** Asserts element has the attribute, optionally with a specific value. */
-  toHaveAttribute(attribute: string, value?: string): R;
+  toHaveAttribute(attribute: string, value?: string): MatcherResult<this>;
   /** Asserts element attribute equals the expected value exactly. */
-  toEqualAttribute(attribute: string, value: string): R;
+  toEqualAttribute(attribute: string, value: string): MatcherResult<this>;
   /** Asserts element has all specified attributes with exact values. */
-  toEqualAttributes(expectedAttrs: Record<string, string>): R;
-  /** Asserts element has the property, optionally with a specific value. */
-  toHaveProperty(property: string, value?: any): R;
+  toEqualAttributes(expectedAttrs: Record<string, string>): MatcherResult<this>;
   /** Asserts element's text content (including shadow DOM) contains the specified text. */
-  toHaveTextContent(text: string): R;
+  toHaveTextContent(text: string): MatcherResult<this>;
   /** Asserts element's light DOM text content contains the specified text. */
-  toHaveLightTextContent(text: string): R;
+  toHaveLightTextContent(text: string): MatcherResult<this>;
   /** Asserts element's trimmed text content (including shadow DOM) equals the expected text exactly. */
-  toEqualText(expectedText: string): R;
+  toEqualText(expectedText: string): MatcherResult<this>;
   /** Asserts element's trimmed light DOM text content (excluding shadow DOM) equals the expected text exactly. */
-  toEqualLightText(expectedText: string): R;
+  toEqualLightText(expectedText: string): MatcherResult<this>;
   /** Asserts element has an attached shadow root. */
-  toHaveShadowRoot(): R;
+  toHaveShadowRoot(): MatcherResult<this>;
   /** Asserts element's serialized HTML (including shadow DOM) matches expected HTML. */
-  toEqualHtml(expectedHtml: string): R;
+  toEqualHtml(expectedHtml: string): MatcherResult<this>;
   /** Asserts element's light DOM HTML (excluding shadow DOM internals) matches expected HTML. */
-  toEqualLightHtml(expectedHtml: string): R;
+  toEqualLightHtml(expectedHtml: string): MatcherResult<this>;
   /** Asserts event spy has received at least one event. */
-  toHaveReceivedEvent(): R;
+  toHaveReceivedEvent(): MatcherResult<this>;
   /** Asserts event spy has received exactly the specified number of events. */
-  toHaveReceivedEventTimes(count: number): R;
+  toHaveReceivedEventTimes(count: number): MatcherResult<this>;
   /** Asserts event spy's last received event has the expected detail. */
-  toHaveReceivedEventDetail(detail: any): R;
+  toHaveReceivedEventDetail(detail: any): MatcherResult<this>;
   /** Asserts event spy's first received event has the expected detail. */
-  toHaveFirstReceivedEventDetail(detail: any): R;
+  toHaveFirstReceivedEventDetail(detail: any): MatcherResult<this>;
   /** Asserts event spy's last received event has the expected detail. */
-  toHaveLastReceivedEventDetail(detail: any): R;
+  toHaveLastReceivedEventDetail(detail: any): MatcherResult<this>;
   /** Asserts event spy's nth received event (0-indexed) has the expected detail. */
-  toHaveNthReceivedEventDetail(index: number, detail: any): R;
+  toHaveNthReceivedEventDetail(index: number, detail: any): MatcherResult<this>;
 }
 
 // Extend Vitest types
 declare module 'vitest' {
-  interface Assertion<T = any> extends CustomMatchers<T> {}
-  interface Matchers<T = any, R = T> extends CustomMatchers<R> {}
-  interface AsymmetricMatchersContaining extends CustomMatchers {}
+  interface Assertion extends CustomMatchers {
+    // Browser matchers also declare these names; explicit members avoid conflicting inherited signatures.
+    toHaveClass(className: string): MatcherResult<this>;
+    toHaveAttribute(attribute: string, value?: string): MatcherResult<this>;
+    toHaveTextContent(text: string): MatcherResult<this>;
+  }
+  interface AsymmetricMatchersContaining extends CustomMatchers {
+    toHaveProperty(property: string, value?: any): unknown;
+  }
 }
 
 /**

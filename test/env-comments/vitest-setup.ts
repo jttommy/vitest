@@ -1,9 +1,6 @@
-/**
- * Vitest setup for browser environment
- * Extends the base setup and loads Stencil components in the browser
- */
-
-// Load the Stencil components for this project
-await import('./dist/test-components-env-comments/test-components-env-comments.esm.js');
+// The fixture also contains a Node test without a DOM.
+if (typeof window !== 'undefined') {
+  await import('./dist/test-components-env-comments/test-components-env-comments.esm.js');
+}
 
 export {};

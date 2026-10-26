@@ -34,8 +34,11 @@ This installs all dependencies for the main package and workspaces.
 ```bash
 pnpm build
 pnpm test:unit
+pnpm test:types
 pnpm test:e2e
 ```
+
+CI also installs the packed adapter in isolated consumers using each supported Vitest major to check its environment and matcher declarations.
 
 ### 5. Run code quality checks
 

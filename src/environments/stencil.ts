@@ -1,19 +1,46 @@
-import type { Environment } from 'vitest/environments';
+import { createRequire } from 'node:module';
+import { pathToFileURL } from 'node:url';
+import type { WorkerGlobalState } from 'vitest';
 import type { EnvironmentStencil } from './types.js';
-
-// Dynamically import populateGlobal to support both vitest 4.1+ (vitest/runtime) and older versions (vitest/environments)
-async function getPopulateGlobal() {
-  try {
-    // Use variable to prevent Vite's static import analysis from failing on older vitest
-    const runtimePath = 'vitest/' + 'runtime';
-    return (await import(/* @vite-ignore */ runtimePath)).populateGlobal;
-  } catch {
-    return (await import('vitest/environments')).populateGlobal;
-  }
-}
 import happyDom from './env/happy-dom.js';
 import jsdom from './env/jsdom.js';
 import mockDoc from './env/mock-doc.js';
+
+// WorkerGlobalState exposes Environment from the same entry point in Vitest 2–5.
+type Environment = WorkerGlobalState['environment'];
+
+const require = createRequire(import.meta.url);
+
+// Vitest 4 replaced `transformMode` with `viteEnvironment` and warns when the old field is still set.
+const vitestMajor = Number.parseInt(require('vitest/package.json').version, 10);
+const environmentOptions = vitestMajor >= 4 ? { viteEnvironment: 'ssr' as const } : { transformMode: 'ssr' as const };
+
+// populateGlobal lives in vitest/runtime from Vitest 4.1 and in vitest/environments before that (removed in Vitest 5).
+// The specifiers are variables because Vite fails to analyze an entry the installed Vitest lacks.
+// The file URL is a fallback for Vitest 5 on Windows, whose two module runners each mishandle one form:
+// the one that loads environments rejects the URL, and the one that runs test code (where this module
+// ends up when it is imported directly) resolves the bare specifier against the cwd.
+async function getPopulateGlobal() {
+  let error: unknown;
+  for (const entry of ['vitest/runtime', 'vitest/environments']) {
+    let resolved: string;
+    try {
+      resolved = require.resolve(entry);
+    } catch {
+      continue;
+    }
+    for (const specifier of [entry, pathToFileURL(resolved).href]) {
+      try {
+        return (await import(/* @vite-ignore */ specifier)).populateGlobal;
+      } catch (e) {
+        error ??= e;
+      }
+    }
+  }
+  throw new Error('@stencil/vitest: could not load populateGlobal from the installed version of vitest', {
+    cause: error,
+  });
+}
 
 export interface StencilEnvironmentOptions {
   /**
@@ -46,9 +73,9 @@ const environmentMap: Record<string, EnvironmentStencil> = {
  * })
  * ```
  */
-export default <Environment>{
+const environment: Environment = {
   name: 'stencil',
-  viteEnvironment: 'ssr',
+  ...environmentOptions,
 
   async setup(global, options) {
     const { stencil = {} } = options as { stencil?: StencilEnvironmentOptions };
@@ -86,6 +113,14 @@ export default <Environment>{
       win.process.env.NODE_ENV = 'test';
     }
 
+    // Vitest 2–4 store values in originals; Vitest 5 stores descriptors.
+    // Capture descriptors ourselves so both preserve the native globals.
+    const originalDescriptors: PropertyDescriptorMap = Object.getOwnPropertyDescriptors(global);
+    const restoreGlobal = (key: string | symbol) => {
+      const descriptor = originalDescriptors[key];
+      if (descriptor) Object.defineProperty(global, key, descriptor);
+    };
+
     // Populate global with window properties
     const populateGlobal = await getPopulateGlobal();
     const { keys, originals } = populateGlobal(global, win, {
@@ -95,7 +130,7 @@ export default <Environment>{
     // Restore Node's native Event constructor (chai needs this)
     // CustomEvent can stay as mock-doc's version since it's needed for event creation
     if (originals.has('Event')) {
-      (global as any).Event = originals.get('Event');
+      restoreGlobal('Event');
     }
 
     // Create HTMLElement wrapper that captures ownerDocument
@@ -104,7 +139,7 @@ export default <Environment>{
     // super() with no args (standard browser behavior). This wrapper bridges the gap.
     const MockHTMLElementBase = (global as any).HTMLElement;
     const doc = win.document;
-    (global as any).HTMLElement = class extends MockHTMLElementBase {
+    const HTMLElement = class extends MockHTMLElementBase {
       constructor() {
         super(doc, '');
         const observedAttributes = (this.constructor as any).observedAttributes;
@@ -118,11 +153,12 @@ export default <Environment>{
         }
       }
     };
+    Object.defineProperty(global, 'HTMLElement', { value: HTMLElement, writable: true, configurable: true });
 
     // Remove undefined properties that shadow native globals
     keys.forEach((key) => {
       if ((global as any)[key] === undefined && originals.has(key)) {
-        (global as any)[key] = originals.get(key);
+        restoreGlobal(key);
       }
     });
 
@@ -135,8 +171,10 @@ export default <Environment>{
 
         // Then clean up populated globals
         keys.forEach((key) => delete (global as any)[key]);
-        originals.forEach((v, k) => ((global as any)[k] = v));
+        originals.forEach((_, key) => restoreGlobal(key));
       },
     };
   },
 };
+
+export default environment;

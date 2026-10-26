@@ -21,6 +21,9 @@
     "test/env-comments/vitest.config.ts",
     "test/env-comments/vitest-setup.ts",
 
+    "test/types/**/*.ts",
+    "test/compat/**/*.ts",
+
     "packages/vitest-environment-stencil/**/*"
   ],
   "exclude": ["node_modules", "dist", "test/project/dist", "test/project/hydrate", "test/project/loader"]

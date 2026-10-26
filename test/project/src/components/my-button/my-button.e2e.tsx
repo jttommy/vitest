@@ -47,13 +47,21 @@ describe('my-button - browser tests', () => {
   });
 
   describe('visual regression', () => {
+    // The host is `display: inline` by default, so its box is the font's inline box rather than the button's.
+    // That height differs between platforms; sizing the host to its button keeps one reference image valid on all of them.
+    const hostStyle = { display: 'inline-flex' };
+
     it('should match screenshot for default variant', async () => {
-      const { root } = await render(<my-button>Default Button</my-button>);
+      const { root } = await render(<my-button style={hostStyle}>Default Button</my-button>);
       await expect(root).toMatchScreenshot('default' as any);
     });
 
     it('should match screenshot for primary variant', async () => {
-      const { root } = await render(<my-button variant="primary">Primary Button</my-button>);
+      const { root } = await render(
+        <my-button variant="primary" style={hostStyle}>
+          Primary Button
+        </my-button>,
+      );
       await expect(root).toMatchScreenshot('primary' as any);
     });
 

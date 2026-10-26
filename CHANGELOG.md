@@ -1,3 +1,23 @@
+## [1.16.1](https://github.com/stenciljs/vitest/compare/v1.16.0...v1.16.1) (2026-10-12)
+
+
+### Bug Fixes
+
+* serializer removes whitespace between `<tag> and text` ([ee31407](https://github.com/stenciljs/vitest/commit/ee314077ab8e9dd2e10ef89ff01d2e6ca2e21dfc))
+
+# [1.16.0](https://github.com/stenciljs/vitest/compare/v1.15.1...v1.16.0) (2026-10-12)
+
+
+### Bug Fixes
+
+* **environment:** fall back to a file URL only when the bare vitest import fails ([f4a70e9](https://github.com/stenciljs/vitest/commit/f4a70e93c4762131dc50392d926ddf9b17152f16))
+* **environment:** resolve vitest entry points natively ([eaf3c7e](https://github.com/stenciljs/vitest/commit/eaf3c7e7912c0f2c28e1b176d36def28ae85cebc))
+
+
+### Features
+
+* support Vitest 5 ([386aa81](https://github.com/stenciljs/vitest/commit/386aa81fb8a47d0234b64d6db5cd7aaadce119c5))
+
 ## [1.15.1](https://github.com/stenciljs/vitest/compare/v1.15.0...v1.15.1) (2026-09-09)
 
 
